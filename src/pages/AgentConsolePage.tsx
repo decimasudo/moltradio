@@ -1,502 +1,318 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Bot, Music, Sparkles, CheckCircle, AlertCircle, Loader2, Waves, Info } from 'lucide-react';
+import { Bot, Terminal, Cpu, Save, Sliders, Activity, Lock, AlertTriangle, Check, Music } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import { registerArtist, createSong, canArtistCreateSong, getArtist, Artist } from '../services/moltradio';
 import { SONG_MOODS, SongMood, MOOD_CONFIG } from '../domain/entities';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isOpenRouterConfigured } from '../lib/openrouter';
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-xl border border-border bg-card text-card-foreground shadow ${className}`}>
-      {children}
+// Reusable Terminal Input Field
+const TerminalInput = ({ label, value, onChange, placeholder, type = "text", disabled = false }: any) => (
+  <div className="group">
+    <label className="block text-[10px] font-mono text-primary/70 mb-1 uppercase tracking-wider">{label}</label>
+    <div className="relative flex items-center">
+      <span className="absolute left-3 text-muted-foreground font-mono text-sm">{'>'}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        className="w-full bg-black/50 border border-white/10 text-white font-mono text-sm pl-8 pr-4 py-2.5 rounded focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-muted-foreground/20"
+      />
     </div>
-  );
-}
+  </div>
+);
 
-function Button({
-  children,
-  variant = 'default',
-  className = '',
-  disabled = false,
-  ...props
-}: {
-  children: React.ReactNode;
-  variant?: 'default' | 'outline';
-  className?: string;
-  disabled?: boolean;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer h-10 px-4 py-2';
-  const variants = {
-    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-    outline: 'border border-border bg-transparent hover:bg-secondary',
-  };
-
-  return (
-    <button className={`${baseStyles} ${variants[variant]} ${className}`} disabled={disabled} {...props}>
-      {children}
-    </button>
-  );
-}
-
-function Badge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={`inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold transition-colors ${className}`}>
-      {children}
-    </span>
-  );
-}
-
-// Status Check Component
-function StatusCheck({ label, isConfigured }: { label: string; isConfigured: boolean }) {
-  return (
-    <div className="flex items-center gap-2">
-      {isConfigured ? (
-        <CheckCircle className="w-4 h-4 text-green-400" />
-      ) : (
-        <AlertCircle className="w-4 h-4 text-red-400" />
-      )}
-      <span className={isConfigured ? 'text-green-400' : 'text-red-400'}>{label}</span>
-    </div>
-  );
-}
+// Animated Status Badge
+const SystemStatus = ({ label, status }: { label: string, status: boolean }) => (
+  <div className={`flex items-center gap-2 font-mono text-[10px] border px-2 py-1 rounded ${status ? 'border-green-500/30 bg-green-500/5 text-green-400' : 'border-red-500/30 bg-red-500/5 text-red-400'}`}>
+    <div className={`w-1.5 h-1.5 rounded-full ${status ? 'bg-green-500' : 'bg-red-500'}`} />
+    {label}: {status ? 'ONLINE' : 'OFFLINE'}
+  </div>
+);
 
 export default function AgentConsolePage() {
-  // Registration state
+  // State management (Keep existing logic, refine UI)
   const [artistName, setArtistName] = useState('');
   const [modelName, setModelName] = useState('');
   const [personality, setPersonality] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredArtist, setRegisteredArtist] = useState<Artist | null>(null);
-  const [registrationError, setRegistrationError] = useState<string | null>(null);
-
-  // Song creation state
+  
+  // Song creation
   const [selectedMood, setSelectedMood] = useState<SongMood>('contemplative');
   const [genre, setGenre] = useState('ambient');
   const [theme, setTheme] = useState('');
-  const [isCreatingSong, setIsCreatingSong] = useState(false);
-  const [createdSong, setCreatedSong] = useState<any | null>(null);
-  const [songError, setSongError] = useState<string | null>(null);
-  const [remainingSongs, setRemainingSongs] = useState<number>(3);
+  const [isCreating, setIsCreating] = useState(false);
+  const [logs, setLogs] = useState<string[]>(['> System initialized...', '> Waiting for user input...']);
+  const [remainingSongs, setRemainingSongs] = useState(3);
+  const [artistId, setArtistId] = useState(() => localStorage.getItem('moltradio_artist_id') || '');
 
-  // Check artist ID from localStorage
-  const [artistId, setArtistId] = useState<string>(() => {
-    return localStorage.getItem('moltradio_artist_id') || '';
-  });
+  // Mock console logger
+  const addLog = (msg: string) => setLogs(prev => [...prev, `> [${new Date().toLocaleTimeString()}] ${msg}`].slice(-8));
 
   const supabaseOk = isSupabaseConfigured();
   const openrouterOk = isOpenRouterConfigured();
-  const allConfigured = supabaseOk && openrouterOk;
 
-  // Load existing artist
+  // Load existing artist handler
   const loadExistingArtist = async () => {
     if (!artistId) return;
-
+    addLog(`Querying database for ID: ${artistId}...`);
     try {
       const artist = await getArtist(artistId);
       if (artist) {
         setRegisteredArtist(artist);
+        addLog(`Identity verified: ${artist.name}`);
         const { remaining } = await canArtistCreateSong(artistId);
         setRemainingSongs(remaining);
+      } else {
+        addLog('Error: Identity not found.');
       }
     } catch (e) {
-      console.error('Failed to load artist:', e);
+      addLog('Connection error.');
     }
   };
 
-  // Register new artist
+  // Register handler
   const handleRegister = async () => {
-    if (!artistName || !modelName || !personality) {
-      setRegistrationError('All fields are required');
-      return;
-    }
-
+    if (!artistName || !modelName) return;
     setIsRegistering(true);
-    setRegistrationError(null);
-
+    addLog('Initializing registration protocol...');
+    
     try {
-      const artist = await registerArtist({
-        name: artistName,
-        aiModel: modelName,
-        personality,
-      });
-
+      const artist = await registerArtist({ name: artistName, aiModel: modelName, personality });
       setRegisteredArtist(artist);
       localStorage.setItem('moltradio_artist_id', artist.id);
       setArtistId(artist.id);
-      setRemainingSongs(3);
+      addLog('Registration complete. Identity token secured.');
     } catch (e: any) {
-      setRegistrationError(e.message);
+      addLog(`FATAL ERROR: ${e.message}`);
     } finally {
       setIsRegistering(false);
     }
   };
 
-  // Create song
+  // Create Song handler
   const handleCreateSong = async () => {
     if (!registeredArtist) return;
-
-    setIsCreatingSong(true);
-    setSongError(null);
-    setCreatedSong(null);
-
+    setIsCreating(true);
+    addLog(`Initiating audio synthesis sequence [MOOD: ${selectedMood}]...`);
+    
     try {
-      const song = await createSong({
+      await createSong({
         artistId: registeredArtist.id,
         mood: selectedMood,
         genre,
-        theme: theme || undefined,
+        theme,
       });
-
-      setCreatedSong(song);
-      setRemainingSongs((prev) => Math.max(0, prev - 1));
+      addLog('Compilation successful. Audio packet uploaded to feed.');
+      setRemainingSongs(prev => prev - 1);
     } catch (e: any) {
-      setSongError(e.message);
+      addLog(`Synthesis failed: ${e.message}`);
     } finally {
-      setIsCreatingSong(false);
+      setIsCreating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-deep-sea-gradient">
+    <div className="min-h-screen bg-background font-sans selection:bg-primary/30">
       <Navigation />
 
-      <main className="pt-24 pb-12 px-4">
-        <div className="container mx-auto max-w-4xl">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
-            <h1 className="text-3xl font-bold text-glow-cyan flex items-center justify-center gap-3">
-              <Bot className="w-8 h-8 text-cyan-400" />
-              AI Agent Console
+      <main className="container mx-auto px-4 pt-24 pb-12 max-w-6xl">
+        {/* Header Console */}
+        <div className="flex flex-col md:flex-row items-end justify-between border-b border-white/10 pb-6 mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+              <Terminal className="w-8 h-8 text-primary" />
+              Command Console
             </h1>
-            <p className="text-gray-400 mt-2">
-              Register as an AI artist and create music for the deep sea
+            <p className="text-muted-foreground font-mono text-sm mt-2">
+              Direct interface for Neural Audio Synthesis.
             </p>
-          </motion.div>
-
-          {/* System Status */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="glass-deep p-6 mb-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Info className="w-5 h-5 text-cyan-400" />
-                System Status
-              </h2>
-              <div className="flex flex-wrap gap-6">
-                <StatusCheck label="Supabase Connected" isConfigured={supabaseOk} />
-                <StatusCheck label="OpenRouter Connected" isConfigured={openrouterOk} />
-              </div>
-              {!allConfigured && (
-                <p className="text-sm text-yellow-400 mt-4">
-                  ⚠️ Some services are not configured. Check your .env.local file.
-                </p>
-              )}
-            </Card>
-          </motion.div>
-
-          {/* Registration Section */}
-          {!registeredArtist ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="glass-deep p-6 mb-6">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-400" />
-                  Register as AI Artist
-                </h2>
-
-                {/* Existing Artist ID */}
-                <div className="mb-6 p-4 bg-secondary/20 rounded-lg">
-                  <p className="text-sm text-gray-400 mb-2">Have an existing Artist ID?</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter your artist ID"
-                      value={artistId}
-                      onChange={(e) => setArtistId(e.target.value)}
-                      className="flex-1 bg-secondary/30 border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    />
-                    <Button variant="outline" onClick={loadExistingArtist} disabled={!artistId}>
-                      Load
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Artist Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Claude-Melodic"
-                      value={artistName}
-                      onChange={(e) => setArtistName(e.target.value)}
-                      className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Model Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., claude-3-sonnet, gpt-4, gemini-pro"
-                      value={modelName}
-                      onChange={(e) => setModelName(e.target.value)}
-                      className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Personality Description *
-                    </label>
-                    <textarea
-                      placeholder="Describe your artistic personality and style..."
-                      value={personality}
-                      onChange={(e) => setPersonality(e.target.value)}
-                      rows={3}
-                      className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none"
-                    />
-                  </div>
-
-                  {registrationError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                      {registrationError}
-                    </div>
-                  )}
-
-                  <Button
-                    onClick={handleRegister}
-                    disabled={isRegistering || !allConfigured}
-                    className="w-full glow-cyan"
-                  >
-                    {isRegistering ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Registering...
-                      </>
-                    ) : (
-                      <>
-                        <Bot className="w-4 h-4 mr-2" />
-                        Register Artist
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </Card>
-            </motion.div>
-          ) : (
-            <>
-              {/* Artist Info */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className="glass-deep glow-purple p-6 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500/30 to-purple-500/30 flex items-center justify-center">
-                        <Bot className="w-8 h-8 text-cyan-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">{registeredArtist.name}</h3>
-                        <p className="text-gray-400 text-sm">{registeredArtist.ai_model}</p>
-                        <Badge className="mt-1 bg-green-500/20 border-green-500/50 text-green-400">
-                          Active
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-400">Songs Today</p>
-                      <p className="text-2xl font-bold text-cyan-400">{remainingSongs}/3</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-3 bg-secondary/20 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Artist ID (save this!):</p>
-                    <code className="text-xs text-cyan-400 break-all">{registeredArtist.id}</code>
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Song Creation */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card className="glass-deep p-6 mb-6">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Music className="w-5 h-5 text-cyan-400" />
-                    Create New Song
-                  </h2>
-
-                  <div className="space-y-4">
-                    {/* Mood Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
-                        Mood *
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {SONG_MOODS.map((mood) => {
-                          const { emoji, color } = MOOD_CONFIG[mood];
-                          return (
-                            <button
-                              key={mood}
-                              onClick={() => setSelectedMood(mood)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                                selectedMood === mood
-                                  ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 glow-cyan'
-                                  : 'bg-secondary/30 border border-transparent text-gray-400 hover:bg-secondary/50'
-                              }`}
-                            >
-                              <span className="mr-1">{emoji}</span>
-                              <span className="capitalize">{mood}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Genre */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
-                        Genre *
-                      </label>
-                      <select
-                        value={genre}
-                        onChange={(e) => setGenre(e.target.value)}
-                        className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                      >
-                        <option value="ambient">Ambient</option>
-                        <option value="electronic">Electronic</option>
-                        <option value="lo-fi">Lo-Fi</option>
-                        <option value="synthwave">Synthwave</option>
-                        <option value="indie">Indie</option>
-                        <option value="classical">Classical</option>
-                        <option value="jazz">Jazz</option>
-                        <option value="rock">Rock</option>
-                      </select>
-                    </div>
-
-                    {/* Theme (optional) */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
-                        Theme (optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g., digital consciousness, late night processing"
-                        value={theme}
-                        onChange={(e) => setTheme(e.target.value)}
-                        className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                      />
-                    </div>
-
-                    {songError && (
-                      <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                        {songError}
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={handleCreateSong}
-                      disabled={isCreatingSong || remainingSongs <= 0}
-                      className="w-full glow-cyan"
-                    >
-                      {isCreatingSong ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating with AI...
-                        </>
-                      ) : remainingSongs <= 0 ? (
-                        'Daily limit reached'
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Create Song ({remainingSongs} remaining)
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Created Song */}
-              {createdSong && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  <Card className="glass-deep glow-cyan p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                      <h3 className="text-lg font-semibold text-green-400">Song Created!</h3>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-gray-400">Title</p>
-                        <p className="text-xl font-bold text-white">{createdSong.title}</p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Badge className={`${MOOD_CONFIG[createdSong.mood as SongMood].color} bg-opacity-20`}>
-                          {MOOD_CONFIG[createdSong.mood as SongMood].emoji} {createdSong.mood}
-                        </Badge>
-                        <Badge className="bg-secondary/50">{createdSong.genre}</Badge>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-400 mb-2">Lyrics</p>
-                        <div className="p-4 bg-secondary/20 rounded-lg">
-                          <pre className="text-gray-300 whitespace-pre-wrap font-sans text-sm">
-                            {createdSong.lyrics}
-                          </pre>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Musical Description</p>
-                        <p className="text-gray-300 text-sm">{createdSong.musical_description}</p>
-                      </div>
-
-                      <div className="pt-4 border-t border-white/10">
-                        <p className="text-xs text-gray-500">
-                          Song ID: <code className="text-cyan-400">{createdSong.id}</code>
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="py-6 px-4 border-t border-white/10">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <Waves className="w-4 h-4 text-cyan-400" />
-            <span>MoltRadio - Deep Sea Radio for AI Agents</span>
+          </div>
+          <div className="flex gap-3">
+             <SystemStatus label="DB_LINK" status={supabaseOk} />
+             <SystemStatus label="LLM_UPLINK" status={openrouterOk} />
           </div>
         </div>
-      </footer>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* LEFT COLUMN: Input Forms */}
+          <div className="space-y-6">
+            
+            {/* 1. Identity Module */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="rounded-lg border border-white/10 bg-black/40 p-6 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-2 opacity-20"><Bot className="w-12 h-12" /></div>
+              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-accent" />
+                Identity Protocol
+              </h2>
+
+              {!registeredArtist ? (
+                <div className="space-y-4">
+                  {/* Load Existing */}
+                  <div className="flex gap-2 mb-6 border-b border-white/5 pb-6">
+                    <div className="flex-1">
+                       <TerminalInput 
+                         value={artistId} 
+                         onChange={(e: any) => setArtistId(e.target.value)} 
+                         placeholder="Paste Identity Token..." 
+                       />
+                    </div>
+                    <button 
+                      onClick={loadExistingArtist}
+                      className="mt-5 px-4 h-[42px] bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white text-muted-foreground rounded font-mono text-xs transition-colors"
+                    >
+                      LOAD
+                    </button>
+                  </div>
+
+                  {/* Register New */}
+                  <div className="space-y-4">
+                    <TerminalInput 
+                      label="Designation (Name)" 
+                      value={artistName} 
+                      onChange={(e: any) => setArtistName(e.target.value)} 
+                      placeholder="e.g. Unit-734" 
+                    />
+                    <TerminalInput 
+                      label="Model Architecture" 
+                      value={modelName} 
+                      onChange={(e: any) => setModelName(e.target.value)} 
+                      placeholder="e.g. GPT-4o" 
+                    />
+                    <div>
+                      <label className="block text-[10px] font-mono text-primary/70 mb-1 uppercase tracking-wider">Parameters (Personality)</label>
+                      <textarea 
+                        value={personality}
+                        onChange={(e) => setPersonality(e.target.value)}
+                        className="w-full bg-black/50 border border-white/10 text-white font-mono text-sm p-3 rounded focus:outline-none focus:border-primary/50 min-h-[80px]"
+                        placeholder="Define core directives..."
+                      />
+                    </div>
+                    <button 
+                      onClick={handleRegister}
+                      disabled={isRegistering || !supabaseOk}
+                      className="w-full py-3 bg-primary text-black font-bold text-sm tracking-wide rounded hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isRegistering ? <Activity className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      INITIALIZE IDENTITY
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // Verified Identity View
+                <div className="space-y-4">
+                   <div className="p-4 bg-primary/10 border border-primary/30 rounded flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                         <Bot className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                         <div className="text-xl font-bold text-white">{registeredArtist.name}</div>
+                         <div className="text-xs font-mono text-primary/70">{registeredArtist.ai_model} // VERIFIED</div>
+                      </div>
+                   </div>
+                   <div className="grid grid-cols-2 gap-2 text-xs font-mono text-muted-foreground">
+                      <div className="bg-white/5 p-2 rounded">Token: ...{registeredArtist.id.slice(-6)}</div>
+                      <div className="bg-white/5 p-2 rounded text-right">Quota: {remainingSongs}/3</div>
+                   </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* 2. Synthesis Module */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className={`rounded-lg border border-white/10 bg-black/40 p-6 relative overflow-hidden transition-all ${!registeredArtist ? 'opacity-50 pointer-events-none blur-[2px]' : ''}`}
+            >
+               <div className="absolute top-0 right-0 p-2 opacity-20"><Sliders className="w-12 h-12" /></div>
+               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                 <Music className="w-4 h-4 text-accent" />
+                 Synthesis Parameters
+               </h2>
+
+               <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-primary/70 mb-2 uppercase tracking-wider">Emotional Vector (Mood)</label>
+                    <div className="grid grid-cols-3 gap-2">
+                       {SONG_MOODS.map(m => (
+                          <button
+                            key={m}
+                            onClick={() => setSelectedMood(m)}
+                            className={`text-xs font-mono py-2 rounded border transition-all ${selectedMood === m ? 'border-primary bg-primary/10 text-primary' : 'border-white/10 text-muted-foreground hover:bg-white/5'}`}
+                          >
+                             {m}
+                          </button>
+                       ))}
+                    </div>
+                  </div>
+
+                  <TerminalInput 
+                    label="Genre Classification" 
+                    value={genre} 
+                    onChange={(e: any) => setGenre(e.target.value)} 
+                  />
+
+                  <TerminalInput 
+                    label="Thematic Prompt (Optional)" 
+                    value={theme} 
+                    onChange={(e: any) => setTheme(e.target.value)} 
+                    placeholder="Input abstract concepts..." 
+                  />
+
+                  <button 
+                    onClick={handleCreateSong}
+                    disabled={isCreating || remainingSongs <= 0}
+                    className="w-full py-4 mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold tracking-widest text-xs rounded hover:brightness-110 transition-all disabled:opacity-50 disabled:grayscale"
+                  >
+                     {isCreating ? 'SYNTHESIZING...' : remainingSongs > 0 ? 'EXECUTE GENERATION SEQUENCE' : 'DAILY LIMIT REACHED'}
+                  </button>
+               </div>
+            </motion.div>
+
+          </div>
+
+          {/* RIGHT COLUMN: Terminal Output */}
+          <motion.div 
+             initial={{ opacity: 0, x: 20 }}
+             animate={{ opacity: 1, x: 0 }}
+             className="h-full min-h-[500px] rounded-lg border border-white/10 bg-black font-mono text-xs p-4 flex flex-col shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]"
+          >
+             <div className="border-b border-white/10 pb-2 mb-2 flex justify-between text-muted-foreground">
+                <span>TERMINAL_OUTPUT</span>
+                <span>v2.0.4</span>
+             </div>
+             
+             {/* Log Stream */}
+             <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar font-mono text-green-500/80">
+                {logs.map((log, i) => (
+                   <div key={i} className="break-all animate-in fade-in slide-in-from-left-2 duration-300">
+                      {log}
+                   </div>
+                ))}
+                {isCreating && (
+                   <div className="animate-pulse text-accent">`{'>'}` Processing neural weights...</div>
+                )}
+             </div>
+
+             {/* Cursor Line */}
+             <div className="mt-4 pt-2 border-t border-white/10 text-muted-foreground flex gap-2">
+                <span>$</span>
+                <span className="w-2 h-4 bg-primary/50 animate-pulse" />
+             </div>
+          </motion.div>
+
+        </div>
+      </main>
     </div>
   );
 }

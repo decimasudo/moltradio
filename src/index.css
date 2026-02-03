@@ -4,65 +4,60 @@
 
 @layer base {
   :root {
-    --radius: 0.75rem;
+    --radius: 0.5rem; /* Slightly sharper corners for a tech/equipment feel */
 
-    /* Deep Sea Color Palette */
-    --deep-sea: 240 20% 8%;
-    --bioluminescent: 195 70% 50%;
-    --abyss: 250 30% 4%;
-    --coral: 25 70% 55%;
-    --jellyfish: 300 50% 65%;
+    /* Theme: Benthic Analog
+      Concept: Dark matte metal, phosphor displays, deep ocean pressure.
+      Avoids: Neon cyberpunk defaults.
+    */
 
-    /* Base Colors - Dark Theme */
-    --background: 240 30% 5%;
-    --foreground: 220 10% 95%;
+    /* Background: Very dark slate blue, almost black */
+    --background: 224 25% 6%;
+    /* Foreground: Off-white, not pure white, for easier reading */
+    --foreground: 210 20% 98%;
 
-    /* Cards with Deep Sea Glass Effect */
-    --card: 235 30% 8%;
-    --card-foreground: 220 10% 95%;
+    /* Card: Slightly lighter than background, "matte" finish */
+    --card: 224 20% 8%;
+    --card-foreground: 210 20% 98%;
 
-    /* Popover */
-    --popover: 240 30% 6%;
-    --popover-foreground: 220 10% 95%;
+    /* Popover: Distinct from card, slightly raised */
+    --popover: 224 20% 8%;
+    --popover-foreground: 210 20% 98%;
 
-    /* Primary - Bioluminescent Cyan */
-    --primary: 195 70% 50%;
-    --primary-foreground: 240 30% 8%;
+    /* Primary: Phosphor/Sonar Green - High contrast, readable, electric */
+    --primary: 150 60% 55%; 
+    --primary-foreground: 150 90% 5%;
 
-    /* Secondary - Deep Ocean Blue */
-    --secondary: 235 40% 15%;
-    --secondary-foreground: 220 10% 90%;
+    /* Secondary: Muted Steel Blue - Used for secondary actions/info */
+    --secondary: 215 15% 20%;
+    --secondary-foreground: 210 20% 90%;
 
-    /* Muted - Darker Ocean */
-    --muted: 240 25% 12%;
-    --muted-foreground: 220 15% 60%;
+    /* Muted: Subtle separators */
+    --muted: 215 15% 15%;
+    --muted-foreground: 215 15% 50%;
 
-    /* Accent - Jellyfish Purple/Pink Glow */
-    --accent: 300 50% 50%;
-    --accent-foreground: 300 10% 98%;
+    /* Accent: Bioluminescent Amber/Orange - For "Live" or specific highlights */
+    --accent: 32 80% 60%;
+    --accent-foreground: 32 90% 10%;
 
-    /* Destructive - Coral Warning */
-    --destructive: 25 70% 50%;
+    /* Destructive: Signal Red */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Borders - Subtle Glow */
-    --border: 220 20% 20%;
-    --input: 235 25% 10%;
-    --ring: 195 60% 45%;
+    /* Border: Low contrast, subtle separation */
+    --border: 215 15% 15%;
+    --input: 215 15% 15%;
+    --ring: 150 60% 55%;
 
-    /* Sidebar */
-    --sidebar-background: 245 30% 4%;
-    --sidebar-foreground: 220 10% 90%;
-    --sidebar-primary: 195 70% 50%;
-    --sidebar-primary-foreground: 240 30% 8%;
-    --sidebar-accent: 235 30% 12%;
-    --sidebar-accent-foreground: 220 10% 90%;
-    --sidebar-border: 230 20% 18%;
-    --sidebar-ring: 195 60% 45%;
+    /* Brand Specifics */
+    --brand-deep: 224 30% 4%;
+    --brand-surface: 224 20% 10%;
   }
 
-  /* Force dark mode - Deep Sea Radio is always dark */
   .dark {
-    /* Same as root - always dark theme */
+    /* Theme is natively dark, but we keep this block for robustness */
+    --background: 224 25% 6%;
+    --foreground: 210 20% 98%;
   }
 
   * {
@@ -70,112 +65,75 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground;
+    /* Improved font rendering for dark mode */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* The "Anti-AI" Texture Layer */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    mix-blend-mode: overlay;
   }
 }
 
 @layer utilities {
-  /* Bioluminescent Glow Effects */
-  .glow-cyan {
-    box-shadow: 0 0 20px hsl(195 70% 50% / 0.4),
-                0 0 40px hsl(195 70% 50% / 0.2),
-                0 0 60px hsl(195 70% 50% / 0.1);
+  /* Glass Effects - Refined
+    Less "blurry plastic", more "tinted glass" 
+  */
+  .glass-panel {
+    @apply bg-background/80 backdrop-blur-md border border-white/5 shadow-2xl;
   }
 
-  .glow-purple {
-    box-shadow: 0 0 20px hsl(300 50% 50% / 0.4),
-                0 0 40px hsl(300 50% 50% / 0.2),
-                0 0 60px hsl(300 50% 50% / 0.1);
+  .glass-panel-heavy {
+    @apply bg-background/95 backdrop-blur-xl border-t border-white/10 shadow-black/50;
   }
 
-  .glow-coral {
-    box-shadow: 0 0 15px hsl(25 70% 55% / 0.4),
-                0 0 30px hsl(25 70% 55% / 0.2);
+  /* Text Styles */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Custom Scrollbar - Minimal and dark */
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+  }
+  
+  .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
   }
 
-  /* Text Glow */
-  .text-glow-cyan {
-    text-shadow: 0 0 10px hsl(195 70% 50% / 0.6),
-                 0 0 20px hsl(195 70% 50% / 0.4);
-  }
-
-  .text-glow-purple {
-    text-shadow: 0 0 10px hsl(300 50% 50% / 0.6),
-                 0 0 20px hsl(300 50% 50% / 0.4);
-  }
-
-  /* Deep Sea Glass Effect */
-  .glass-deep {
-    background: hsl(235 30% 8% / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(220 20% 20% / 0.3);
-  }
-
-  /* Animated Gradient Background */
-  .bg-deep-sea-gradient {
-    background: linear-gradient(
-      180deg,
-      hsl(240 30% 5%) 0%,
-      hsl(250 35% 4%) 50%,
-      hsl(260 30% 3%) 100%
-    );
-  }
-
-  /* Floating Animation - Like Underwater */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .animate-float-slow {
-    animation: float 10s ease-in-out infinite;
-  }
-
-  /* Pulse Glow Animation */
-  .animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
+  /* Audio Visualizer Helpers */
+  .bar-animation {
+    animation: equalizer 1s ease-in-out infinite;
   }
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.6;
-    filter: brightness(1);
-  }
-  50% {
-    opacity: 1;
-    filter: brightness(1.2);
-  }
-}
-
-/* Scrollbar Styling */
+/* Custom Scrollbar Global */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(240 30% 6%);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(230 20% 18%);
-  border-radius: 4px;
+  @apply bg-muted rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 20% 25%);
-}
-
-img {
-  object-position: top;
+  @apply bg-muted-foreground;
 }

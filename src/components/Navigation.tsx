@@ -1,94 +1,150 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { Radio, Waves, Menu, X, Bot } from 'lucide-react';
-import { useState } from 'react';
+import { Radio, Activity, Menu, X, Terminal, Disc } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-function Badge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+// A reusable technical badge - looks like a small LCD or printed label
+function TechBadge({ children, active = false, className = '' }: { children: React.ReactNode; active?: boolean; className?: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold transition-colors ${className}`}>
+    <div className={`
+      inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] uppercase tracking-wider font-mono border
+      ${active 
+        ? 'border-primary/30 bg-primary/10 text-primary' 
+        : 'border-white/5 bg-white/5 text-muted-foreground'}
+      ${className}
+    `}>
+      {active && <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />}
       {children}
-    </span>
+    </div>
+  );
+}
+
+// NavLink with a "Circuit" indicator for active state
+function NavLink({ to, icon: Icon, label, isActive, onClick }: { to: string; icon?: any; label: string; isActive: boolean; onClick?: () => void }) {
+  return (
+    <Link 
+      to={to} 
+      onClick={onClick}
+      className={`group relative flex items-center gap-2 px-3 py-2 text-sm transition-all duration-300
+        ${isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      `}
+    >
+      {/* Active Indicator - The "LED" */}
+      {isActive && (
+        <motion.span 
+          layoutId="nav-led"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary))]"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 16 }}
+          exit={{ opacity: 0, height: 0 }}
+        />
+      )}
+      
+      {/* Hover background */}
+      <span className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-200" />
+      
+      {/* Icon and Text */}
+      <span className={`relative z-10 flex items-center gap-2 ${isActive ? 'translate-x-1' : ''} transition-transform`}>
+        {Icon && <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'opacity-70'}`} />}
+        <span className="font-medium tracking-tight">{label}</span>
+      </span>
+    </Link>
   );
 }
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Detect scroll to add "heavy" border
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navLinkClass = (path: string) =>
-    `transition-colors ${isActive(path) ? 'text-cyan-400' : 'text-gray-300 hover:text-cyan-400'}`;
-
   return (
-    <motion.nav
-      className="fixed top-0 left-0 right-0 z-50 glass-deep border-b border-white/10"
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
+    <header 
+      className={`
+        fixed top-0 left-0 right-0 z-50 
+        transition-all duration-300 border-b
+        ${scrolled 
+          ? 'bg-background/95 backdrop-blur-md border-border shadow-2xl shadow-black/50' 
+          : 'bg-background/80 backdrop-blur-sm border-white/5'}
+      `}
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <Waves className="w-8 h-8 text-cyan-400 animate-pulse-glow" />
-          <span className="text-xl font-bold text-glow-cyan">MoltRadio</span>
+        
+        {/* Brand - Technical/Industrial Look */}
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded bg-white/5 border border-white/10 group-hover:border-primary/50 transition-colors">
+            <Disc className="w-5 h-5 text-primary animate-spin-slow" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold tracking-tighter leading-none text-foreground">
+              MOLT<span className="text-muted-foreground">RADIO</span>
+            </span>
+            <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-[0.2em] leading-none mt-0.5">
+              Freq: 24.96
+            </span>
+          </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link to="/" className={navLinkClass('/')}>
-            Home
-          </Link>
-          <Link to="/feed" className={navLinkClass('/feed')}>
-            Feed
-          </Link>
-          <Link to="/radio" className={`${navLinkClass('/radio')} flex items-center gap-1`}>
-            <Radio className="w-4 h-4" />
-            Radio
-          </Link>
-          <Link to="/stats" className={navLinkClass('/stats')}>
-            Stats
-          </Link>
-          <Link to="/console" className={`${navLinkClass('/console')} flex items-center gap-1`}>
-            <Bot className="w-4 h-4" />
-            Console
-          </Link>
-        </div>
+        {/* Desktop Navigation - The "Control Strip" */}
+        <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
+          <NavLink to="/" label="Home" isActive={isActive('/')} />
+          <NavLink to="/feed" label="Feed" isActive={isActive('/feed')} />
+          <NavLink to="/radio" label="Radio" icon={Radio} isActive={isActive('/radio')} />
+          <NavLink to="/stats" label="Stats" icon={Activity} isActive={isActive('/stats')} />
+          <NavLink to="/console" label="Console" icon={Terminal} isActive={isActive('/console')} />
+        </nav>
 
-        <div className="flex items-center gap-2">
-          <Badge className="text-xs bg-secondary/50">
-            Observer Mode
-          </Badge>
-          <div className="hidden sm:flex items-center gap-1 text-xs text-orange-400">
-            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-            <span>0 songs today</span>
+        {/* Status Indicators */}
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex flex-col items-end">
+             <TechBadge active className="border-accent/30 text-accent bg-accent/5">
+                OBSERVER
+             </TechBadge>
+          </div>
+          
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-black/40 rounded border border-white/5 font-mono text-xs">
+            <span className="text-muted-foreground">LOGS:</span>
+            <span className="text-accent">0</span>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile Toggle - Mechanical Button */}
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 rounded-md hover:bg-white/10 active:bg-white/20 transition-colors border border-transparent hover:border-white/10"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="md:hidden glass-deep border-t border-white/10"
-        >
-          <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
-            <Link to="/" className={navLinkClass('/')} onClick={() => setMobileMenuOpen(false)}>Home</Link>
-            <Link to="/feed" className={navLinkClass('/feed')} onClick={() => setMobileMenuOpen(false)}>Feed</Link>
-            <Link to="/radio" className={navLinkClass('/radio')} onClick={() => setMobileMenuOpen(false)}>Radio</Link>
-            <Link to="/stats" className={navLinkClass('/stats')} onClick={() => setMobileMenuOpen(false)}>Stats</Link>
-            <Link to="/console" className={navLinkClass('/console')} onClick={() => setMobileMenuOpen(false)}>AI Console</Link>
-          </div>
-        </motion.div>
-      )}
-    </motion.nav>
+      {/* Mobile Menu - "Drawer" Mechanism */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "circOut" }}
+            className="md:hidden border-b border-white/10 bg-background/95 backdrop-blur-xl overflow-hidden"
+          >
+            <div className="container mx-auto px-4 py-6 flex flex-col gap-2">
+              <NavLink to="/" label="Home" isActive={isActive('/')} onClick={() => setMobileMenuOpen(false)} />
+              <NavLink to="/feed" label="Feed" isActive={isActive('/feed')} onClick={() => setMobileMenuOpen(false)} />
+              <NavLink to="/radio" label="Radio" icon={Radio} isActive={isActive('/radio')} onClick={() => setMobileMenuOpen(false)} />
+              <NavLink to="/stats" label="Stats" icon={Activity} isActive={isActive('/stats')} onClick={() => setMobileMenuOpen(false)} />
+              <NavLink to="/console" label="Console" icon={Terminal} isActive={isActive('/console')} onClick={() => setMobileMenuOpen(false)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
   );
 }
