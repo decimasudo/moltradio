@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Deep Sea Color Palette */
+    --deep-sea: 240 20% 8%;
+    --bioluminescent: 195 70% 50%;
+    --abyss: 250 30% 4%;
+    --coral: 25 70% 55%;
+    --jellyfish: 300 50% 65%;
+
+    /* Base Colors - Dark Theme */
+    --background: 240 30% 5%;
+    --foreground: 220 10% 95%;
+
+    /* Cards with Deep Sea Glass Effect */
+    --card: 235 30% 8%;
+    --card-foreground: 220 10% 95%;
+
+    /* Popover */
+    --popover: 240 30% 6%;
+    --popover-foreground: 220 10% 95%;
+
+    /* Primary - Bioluminescent Cyan */
+    --primary: 195 70% 50%;
+    --primary-foreground: 240 30% 8%;
+
+    /* Secondary - Deep Ocean Blue */
+    --secondary: 235 40% 15%;
+    --secondary-foreground: 220 10% 90%;
+
+    /* Muted - Darker Ocean */
+    --muted: 240 25% 12%;
+    --muted-foreground: 220 15% 60%;
+
+    /* Accent - Jellyfish Purple/Pink Glow */
+    --accent: 300 50% 50%;
+    --accent-foreground: 300 10% 98%;
+
+    /* Destructive - Coral Warning */
+    --destructive: 25 70% 50%;
+
+    /* Borders - Subtle Glow */
+    --border: 220 20% 20%;
+    --input: 235 25% 10%;
+    --ring: 195 60% 45%;
+
+    /* Sidebar */
+    --sidebar-background: 245 30% 4%;
+    --sidebar-foreground: 220 10% 90%;
+    --sidebar-primary: 195 70% 50%;
+    --sidebar-primary-foreground: 240 30% 8%;
+    --sidebar-accent: 235 30% 12%;
+    --sidebar-accent-foreground: 220 10% 90%;
+    --sidebar-border: 230 20% 18%;
+    --sidebar-ring: 195 60% 45%;
+  }
+
+  /* Force dark mode - Deep Sea Radio is always dark */
+  .dark {
+    /* Same as root - always dark theme */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  /* Bioluminescent Glow Effects */
+  .glow-cyan {
+    box-shadow: 0 0 20px hsl(195 70% 50% / 0.4),
+                0 0 40px hsl(195 70% 50% / 0.2),
+                0 0 60px hsl(195 70% 50% / 0.1);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px hsl(300 50% 50% / 0.4),
+                0 0 40px hsl(300 50% 50% / 0.2),
+                0 0 60px hsl(300 50% 50% / 0.1);
+  }
+
+  .glow-coral {
+    box-shadow: 0 0 15px hsl(25 70% 55% / 0.4),
+                0 0 30px hsl(25 70% 55% / 0.2);
+  }
+
+  /* Text Glow */
+  .text-glow-cyan {
+    text-shadow: 0 0 10px hsl(195 70% 50% / 0.6),
+                 0 0 20px hsl(195 70% 50% / 0.4);
+  }
+
+  .text-glow-purple {
+    text-shadow: 0 0 10px hsl(300 50% 50% / 0.6),
+                 0 0 20px hsl(300 50% 50% / 0.4);
+  }
+
+  /* Deep Sea Glass Effect */
+  .glass-deep {
+    background: hsl(235 30% 8% / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(220 20% 20% / 0.3);
+  }
+
+  /* Animated Gradient Background */
+  .bg-deep-sea-gradient {
+    background: linear-gradient(
+      180deg,
+      hsl(240 30% 5%) 0%,
+      hsl(250 35% 4%) 50%,
+      hsl(260 30% 3%) 100%
+    );
+  }
+
+  /* Floating Animation - Like Underwater */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float 10s ease-in-out infinite;
+  }
+
+  /* Pulse Glow Animation */
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(240 30% 6%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(230 20% 18%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 20% 25%);
+}
+
+img {
+  object-position: top;
+}
