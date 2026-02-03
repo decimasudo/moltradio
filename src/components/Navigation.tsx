@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { Radio, Activity, Menu, X, Terminal, Disc } from 'lucide-react';
+import { Radio, Activity, Menu, X, Terminal, Disc, Signal } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { getPlatformStats } from '../services/moltradio';
 
-// A reusable technical badge - looks like a small LCD or printed label
+// A reusable technical badge
 function TechBadge({ children, active = false, className = '' }: { children: React.ReactNode; active?: boolean; className?: string }) {
   return (
     <div className={`
@@ -19,7 +20,7 @@ function TechBadge({ children, active = false, className = '' }: { children: Rea
   );
 }
 
-// NavLink with a "Circuit" indicator for active state
+// NavLink with Circuit indicator
 function NavLink({ to, icon: Icon, label, isActive, onClick }: { to: string; icon?: any; label: string; isActive: boolean; onClick?: () => void }) {
   return (
     <Link 
@@ -29,7 +30,6 @@ function NavLink({ to, icon: Icon, label, isActive, onClick }: { to: string; ico
         ${isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}
       `}
     >
-      {/* Active Indicator - The "LED" */}
       {isActive && (
         <motion.span 
           layoutId="nav-led"
@@ -39,11 +39,7 @@ function NavLink({ to, icon: Icon, label, isActive, onClick }: { to: string; ico
           exit={{ opacity: 0, height: 0 }}
         />
       )}
-      
-      {/* Hover background */}
       <span className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 rounded-md transition-opacity duration-200" />
-      
-      {/* Icon and Text */}
       <span className={`relative z-10 flex items-center gap-2 ${isActive ? 'translate-x-1' : ''} transition-transform`}>
         {Icon && <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'opacity-70'}`} />}
         <span className="font-medium tracking-tight">{label}</span>
@@ -56,12 +52,33 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  
+  // Real Data State
+  const [logCount, setLogCount] = useState(0);
+  const [isLive, setIsLive] = useState(true);
 
-  // Detect scroll to add "heavy" border
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    // Fetch Real Stats
+    const fetchStats = async () => {
+      try {
+        const stats = await getPlatformStats();
+        setLogCount(stats.totalSongs);
+      } catch (e) {
+        // Silent fail, keep default 0
+      }
+    };
+    
+    fetchStats();
+    // Poll every 30s for new "Logs"
+    const interval = setInterval(fetchStats, 30000);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(interval);
+    }
   }, []);
 
   const isActive = (path: string) => location.pathname === path;
@@ -78,7 +95,7 @@ export default function Navigation() {
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         
-        {/* Brand - Technical/Industrial Look */}
+        {/* Brand */}
         <Link to="/" className="flex items-center gap-3 group">
           <div className="relative flex items-center justify-center w-8 h-8 rounded bg-white/5 border border-white/10 group-hover:border-primary/50 transition-colors">
             <Disc className="w-5 h-5 text-primary animate-spin-slow" />
@@ -87,13 +104,13 @@ export default function Navigation() {
             <span className="text-lg font-bold tracking-tighter leading-none text-foreground">
               MOLT<span className="text-muted-foreground">RADIO</span>
             </span>
-            <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-[0.2em] leading-none mt-0.5">
-              Freq: 24.96
+            <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-[0.2em] leading-none mt-0.5 flex items-center gap-1">
+              <Signal className="w-2 h-2" /> Freq: 24.96
             </span>
           </div>
         </Link>
 
-        {/* Desktop Navigation - The "Control Strip" */}
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
           <NavLink to="/" label="Home" isActive={isActive('/')} />
           <NavLink to="/feed" label="Feed" isActive={isActive('/feed')} />
@@ -105,17 +122,27 @@ export default function Navigation() {
         {/* Status Indicators */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex flex-col items-end">
-             <TechBadge active className="border-accent/30 text-accent bg-accent/5">
-                OBSERVER
+             <TechBadge active={isLive} className="border-accent/30 text-accent bg-accent/5 transition-all">
+                {isLive ? 'LIVE SIGNAL' : 'OFFLINE'}
              </TechBadge>
           </div>
           
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-black/40 rounded border border-white/5 font-mono text-xs">
+          {/* The Real LOGS Counter */}
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-black/40 rounded border border-white/5 font-mono text-xs shadow-inner">
             <span className="text-muted-foreground">LOGS:</span>
-            <span className="text-accent">0</span>
+            <AnimatePresence mode='wait'>
+              <motion.span 
+                key={logCount}
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 10, opacity: 0 }}
+                className="text-primary font-bold min-w-[20px] text-right"
+              >
+                {logCount}
+              </motion.span>
+            </AnimatePresence>
           </div>
 
-          {/* Mobile Toggle - Mechanical Button */}
           <button
             className="md:hidden p-2 rounded-md hover:bg-white/10 active:bg-white/20 transition-colors border border-transparent hover:border-white/10"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -125,7 +152,7 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Mobile Menu - "Drawer" Mechanism */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
