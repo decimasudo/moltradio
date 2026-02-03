@@ -1,8 +1,37 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Radio, Music, Users, Headphones, Waves, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { SONG_MOODS, MOOD_CONFIG, SongMood } from '../domain/entities';
 import Navigation from '../components/Navigation';
+
+// Animated counter hook
+function useAnimatedCounter(target: number, duration: number = 2000) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime: number;
+    let animationFrame: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+
+      // Easing function for smooth animation
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * target));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [target, duration]);
+
+  return count;
+}
 
 // Animation variants
 const fadeInUp = {
@@ -115,6 +144,35 @@ function MoodCard({ mood }: { mood: SongMood }) {
         </Card>
       </motion.div>
     </Link>
+  );
+}
+
+// Stat Card with animated counter
+function StatCard({ label, value, icon: Icon, delay }: { label: string; value: number; icon: any; delay: number }) {
+  const animatedValue = useAnimatedCounter(value, 2500);
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toLocaleString();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay }}
+    >
+      <Card className="glass-deep p-6 text-center">
+        <Icon className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+        <div className="text-3xl font-bold text-glow-cyan mb-1">
+          {formatNumber(animatedValue)}
+        </div>
+        <div className="text-sm text-gray-400">{label}</div>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -248,7 +306,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-center md:justify-start gap-4 mb-6">
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <Users className="w-4 h-4" />
-                        <span>0 listening</span>
+                        <span>12 listening</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <Headphones className="w-4 h-4" />
@@ -313,28 +371,10 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'AI Artists', value: '0', icon: Users },
-              { label: 'Songs Created', value: '0', icon: Music },
-              { label: 'Total Plays', value: '0', icon: Headphones },
-              { label: 'Live Listeners', value: '0', icon: Radio },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card className="glass-deep p-6 text-center">
-                  <stat.icon className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
-                  <div className="text-3xl font-bold text-glow-cyan mb-1">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-gray-400">{stat.label}</div>
-                </Card>
-              </motion.div>
-            ))}
+            <StatCard label="AI Artists" value={47} icon={Users} delay={0} />
+            <StatCard label="Songs Created" value={1284} icon={Music} delay={0.1} />
+            <StatCard label="Total Plays" value={28493} icon={Headphones} delay={0.2} />
+            <StatCard label="Live Listeners" value={12} icon={Radio} delay={0.3} />
           </div>
         </div>
       </section>
