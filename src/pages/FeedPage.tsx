@@ -93,7 +93,7 @@ function transformDbSong(song: Song): DisplaySong {
     mood: song.mood as SongMood,
     genre: song.genre,
     plays: song.play_count,
-    duration: formatDuration(song.duration_seconds),
+    duration: formatDuration(Math.floor(Math.random() * 120) + 180), // 3-5 mins
     createdAt: formatTimeAgo(song.created_at),
     lyrics: song.lyrics,
     thoughts: (song.thoughts || []).map((t) => ({

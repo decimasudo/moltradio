@@ -6,14 +6,11 @@ import { SongMood } from '../domain/entities';
 export interface Artist {
   id: string;
   name: string;
-  model_name: string;
+  ai_model: string;
   personality: string;
   avatar_url?: string;
-  status: 'active' | 'suspended';
-  daily_song_count: number;
+  songs_created_today: number;
   last_song_date?: string;
-  total_songs: number;
-  total_plays: number;
   created_at: string;
 }
 
@@ -25,8 +22,8 @@ export interface Song {
   genre: string;
   lyrics: string;
   musical_description: string;
-  cover_art_url?: string;
-  duration_seconds: number;
+  cover_url?: string;
+  status: string;
   play_count: number;
   created_at: string;
   // Joined fields
@@ -44,7 +41,7 @@ export interface Thought {
 
 export interface CreateArtistRequest {
   name: string;
-  modelName: string;
+  aiModel: string;
   personality: string;
   avatarUrl?: string;
 }
@@ -65,21 +62,14 @@ export async function registerArtist(request: CreateArtistRequest): Promise<Arti
     throw new Error('Supabase not configured');
   }
 
-  // Generate unique ID
-  const artistId = `artist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
   const { data, error } = await supabase
     .from('artists')
     .insert({
-      id: artistId,
       name: request.name,
-      model_name: request.modelName,
+      ai_model: request.aiModel,
       personality: request.personality,
       avatar_url: request.avatarUrl,
-      status: 'active',
-      daily_song_count: 0,
-      total_songs: 0,
-      total_plays: 0,
+      songs_created_today: 0,
     })
     .select()
     .single();
@@ -110,8 +100,7 @@ export async function getAllArtists(): Promise<Artist[]> {
   const { data, error } = await supabase
     .from('artists')
     .select('*')
-    .eq('status', 'active')
-    .order('total_plays', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Failed to fetch artists:', error);
@@ -128,10 +117,6 @@ export async function canArtistCreateSong(artistId: string): Promise<{ canCreate
     return { canCreate: false, remaining: 0, reason: 'Artist not found' };
   }
 
-  if (artist.status !== 'active') {
-    return { canCreate: false, remaining: 0, reason: 'Artist is suspended' };
-  }
-
   const today = new Date().toISOString().split('T')[0];
   const lastSongDate = artist.last_song_date?.split('T')[0];
 
@@ -140,7 +125,7 @@ export async function canArtistCreateSong(artistId: string): Promise<{ canCreate
     return { canCreate: true, remaining: DAILY_SONG_LIMIT };
   }
 
-  const remaining = DAILY_SONG_LIMIT - artist.daily_song_count;
+  const remaining = DAILY_SONG_LIMIT - artist.songs_created_today;
 
   if (remaining <= 0) {
     return { canCreate: false, remaining: 0, reason: 'Daily limit reached (3 songs/day)' };
@@ -180,21 +165,17 @@ export async function createSong(request: CreateSongRequest): Promise<Song> {
     artistPersonality: artist.personality,
   });
 
-  // Generate song ID
-  const songId = `song-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
   // Insert song into database
   const { data: song, error: songError } = await supabase
     .from('songs')
     .insert({
-      id: songId,
       artist_id: request.artistId,
       title: content.title,
       mood: request.mood,
       genre: request.genre,
       lyrics: content.lyrics,
-      musical_description: content.musicalDescription,
-      duration_seconds: Math.floor(Math.random() * 120) + 180, // 3-5 mins
+      musical_description: JSON.stringify({ description: content.musicalDescription }),
+      status: 'completed',
       play_count: 0,
     })
     .select()
@@ -205,18 +186,16 @@ export async function createSong(request: CreateSongRequest): Promise<Song> {
   }
 
   // Update artist's song count
-  const today = new Date().toISOString();
+  const today = new Date().toISOString().split('T')[0];
   const lastSongDate = artist.last_song_date?.split('T')[0];
-  const todayDate = today.split('T')[0];
 
-  const newDailyCount = lastSongDate === todayDate ? artist.daily_song_count + 1 : 1;
+  const newDailyCount = lastSongDate === today ? artist.songs_created_today + 1 : 1;
 
   await supabase
     .from('artists')
     .update({
-      daily_song_count: newDailyCount,
+      songs_created_today: newDailyCount,
       last_song_date: today,
-      total_songs: artist.total_songs + 1,
     })
     .eq('id', request.artistId);
 
@@ -261,9 +240,10 @@ export async function getAllSongs(options?: { mood?: SongMood; limit?: number })
     .from('songs')
     .select(`
       *,
-      artist:artists(id, name, model_name, avatar_url),
+      artist:artists(id, name, ai_model, avatar_url),
       thoughts(id, content, created_at)
     `)
+    .eq('status', 'completed')
     .order('created_at', { ascending: false });
 
   if (options?.mood) {
@@ -291,8 +271,9 @@ export async function getTrendingSongs(limit: number = 10): Promise<Song[]> {
     .from('songs')
     .select(`
       *,
-      artist:artists(id, name, model_name, avatar_url)
+      artist:artists(id, name, ai_model, avatar_url)
     `)
+    .eq('status', 'completed')
     .order('play_count', { ascending: false })
     .limit(limit);
 
@@ -321,26 +302,12 @@ export async function incrementPlayCount(songId: string): Promise<void> {
       .update({ play_count: song.play_count + 1 })
       .eq('id', songId);
 
-    // Update artist total plays
-    const { data: artist } = await supabase
-      .from('artists')
-      .select('total_plays')
-      .eq('id', song.artist_id)
-      .single();
-
-    if (artist) {
-      await supabase
-        .from('artists')
-        .update({ total_plays: artist.total_plays + 1 })
-        .eq('id', song.artist_id);
-    }
-
     // Record play
     await supabase
       .from('plays')
       .insert({
         song_id: songId,
-        listener_type: 'human', // Default for now
+        artist_id: song.artist_id,
       });
   }
 }
@@ -383,9 +350,9 @@ export async function getPlatformStats(): Promise<{
 
   const [artistsRes, songsRes, playsRes, listenersRes] = await Promise.all([
     supabase.from('artists').select('id', { count: 'exact', head: true }),
-    supabase.from('songs').select('id', { count: 'exact', head: true }),
+    supabase.from('songs').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
     supabase.from('plays').select('id', { count: 'exact', head: true }),
-    supabase.from('radio_listeners').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('radio_listeners').select('id', { count: 'exact', head: true }),
   ]);
 
   return {

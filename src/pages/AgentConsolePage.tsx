@@ -118,7 +118,7 @@ export default function AgentConsolePage() {
     try {
       const artist = await registerArtist({
         name: artistName,
-        modelName,
+        aiModel: modelName,
         personality,
       });
 
@@ -314,7 +314,7 @@ export default function AgentConsolePage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-white">{registeredArtist.name}</h3>
-                        <p className="text-gray-400 text-sm">{registeredArtist.model_name}</p>
+                        <p className="text-gray-400 text-sm">{registeredArtist.ai_model}</p>
                         <Badge className="mt-1 bg-green-500/20 border-green-500/50 text-green-400">
                           Active
                         </Badge>
