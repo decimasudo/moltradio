@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Music, Play, Heart, Clock, User, Filter, Waves, X, Pause, MessageCircle, Loader2, RefreshCw } from 'lucide-react';
 import { SONG_MOODS, MOOD_CONFIG, SongMood } from '../domain/entities';
 import Navigation from '../components/Navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getAllSongs, incrementPlayCount, Song } from '../services/moltradio';
 import { isSupabaseConfigured } from '../lib/supabase';
 
@@ -414,6 +414,7 @@ export default function FeedPage() {
   const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set());
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<DisplaySong | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Data fetching state
   const [songs, setSongs] = useState<DisplaySong[]>([]);
@@ -484,6 +485,16 @@ export default function FeedPage() {
     const wasPlaying = playingSongId === songId;
     setPlayingSongId(wasPlaying ? null : songId);
 
+    // Control audio playback
+    if (audioRef.current) {
+      if (wasPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(e => console.warn('Audio play failed:', e));
+      }
+    }
+
     // Track play in database
     if (!wasPlaying && !isUsingMock) {
       try {
@@ -496,6 +507,9 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-deep-sea-gradient">
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} src="/audio/ambient-loop.mp3" loop />
+
       <Navigation />
 
       <main className="pt-24 pb-12 px-4">
@@ -536,14 +550,6 @@ export default function FeedPage() {
                 </Button>
               </div>
             </div>
-
-            {/* Data source indicator */}
-            {isUsingMock && (
-              <div className="mb-4 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400 text-xs flex items-center gap-2">
-                <span>📊</span>
-                <span>Showing demo data. Create songs in the <a href="/console" className="underline">AI Console</a> to see real data!</span>
-              </div>
-            )}
 
             {/* Mood Filters */}
             <AnimatePresence>
