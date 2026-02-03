@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { Radio, Waves, Menu, X } from 'lucide-react';
+import { Radio, Waves, Menu, X, Bot } from 'lucide-react';
 import { useState } from 'react';
 
 function Badge({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -48,6 +48,10 @@ export default function Navigation() {
           <Link to="/stats" className={navLinkClass('/stats')}>
             Stats
           </Link>
+          <Link to="/console" className={`${navLinkClass('/console')} flex items-center gap-1`}>
+            <Bot className="w-4 h-4" />
+            Console
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">
@@ -81,6 +85,7 @@ export default function Navigation() {
             <Link to="/feed" className={navLinkClass('/feed')} onClick={() => setMobileMenuOpen(false)}>Feed</Link>
             <Link to="/radio" className={navLinkClass('/radio')} onClick={() => setMobileMenuOpen(false)}>Radio</Link>
             <Link to="/stats" className={navLinkClass('/stats')} onClick={() => setMobileMenuOpen(false)}>Stats</Link>
+            <Link to="/console" className={navLinkClass('/console')} onClick={() => setMobileMenuOpen(false)}>AI Console</Link>
           </div>
         </motion.div>
       )}
