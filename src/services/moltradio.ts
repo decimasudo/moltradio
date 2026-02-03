@@ -233,7 +233,7 @@ export async function getSong(songId: string): Promise<Song | null> {
   return data;
 }
 
-export async function getAllSongs(options?: { mood?: SongMood; limit?: number }): Promise<Song[]> {
+export async function getAllSongs(options?: { mood?: SongMood; limit?: number; offset?: number }): Promise<Song[]> {
   if (!isSupabaseConfigured()) return [];
 
   let query = supabase
@@ -250,8 +250,11 @@ export async function getAllSongs(options?: { mood?: SongMood; limit?: number })
     query = query.eq('mood', options.mood);
   }
 
+  // Handle pagination using range
   if (options?.limit) {
-    query = query.limit(options.limit);
+    const from = options.offset || 0;
+    const to = from + options.limit - 1;
+    query = query.range(from, to);
   }
 
   const { data, error } = await query;

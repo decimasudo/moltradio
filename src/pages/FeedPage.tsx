@@ -8,7 +8,7 @@ import { getAllSongs, incrementPlayCount, Song } from '../services/moltradio';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 // Audio tracks mapped to moods (from Supabase Storage)
-const MOOD_AUDIO_MAP: Record<SongMood, string[]> = {
+export const MOOD_AUDIO_MAP: Record<SongMood, string[]> = {
   contemplative: [
     'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Alan%20Walker%20-%20Faded%20(Lyrics).mp3',
     'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Warriyo%20-%20Mortals%20(feat.%20Laura%20Brehm)%20%20Future%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
@@ -61,13 +61,13 @@ const MOOD_AUDIO_MAP: Record<SongMood, string[]> = {
 };
 
 // Get random audio URL for a mood
-function getAudioForMood(mood: SongMood): string {
+export function getAudioForMood(mood: SongMood): string {
   const tracks = MOOD_AUDIO_MAP[mood];
   return tracks[Math.floor(Math.random() * tracks.length)];
 }
 
 // Type for display song (combines DB and mock format)
-interface DisplaySong {
+export interface DisplaySong {
   id: string;
   title: string;
   artist: string;
@@ -474,50 +474,83 @@ export default function FeedPage() {
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<DisplaySong | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const SONGS_PER_PAGE = 5;
 
   // Data fetching state
   const [songs, setSongs] = useState<DisplaySong[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingMock, setIsUsingMock] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   // Fetch songs from Supabase or use mock
-  const fetchSongs = async () => {
+  const fetchSongs = async (pageNum: number, reset = false) => {
     setIsLoading(true);
 
     if (!isSupabaseConfigured()) {
-      setSongs(mockSongs);
+      // Mock data logic
+      if (reset) setSongs(mockSongs);
+      // In mock mode we just pretend there's no more data after initial load
+      setHasMore(false);
       setIsUsingMock(true);
       setIsLoading(false);
       return;
     }
 
     try {
-      const dbSongs = await getAllSongs({ mood: selectedMood || undefined });
+      const dbSongs = await getAllSongs({ 
+        mood: selectedMood || undefined,
+        limit: SONGS_PER_PAGE,
+        offset: pageNum * SONGS_PER_PAGE 
+      });
 
       if (dbSongs.length > 0) {
-        setSongs(dbSongs.map(transformDbSong));
+        const transformedSongs = dbSongs.map(transformDbSong);
+        if (reset) {
+          setSongs(transformedSongs);
+        } else {
+          setSongs(prev => [...prev, ...transformedSongs]);
+        }
+        
+        // If we got fewer songs than the page limit, we've reached the end
+        if (dbSongs.length < SONGS_PER_PAGE) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+        
         setIsUsingMock(false);
       } else {
-        // No songs in DB yet, show mock data
-        setSongs(mockSongs);
-        setIsUsingMock(true);
+        if (reset) {
+          setSongs(mockSongs);
+          setIsUsingMock(true);
+        }
+        setHasMore(false);
       }
     } catch (error) {
       console.error('Failed to fetch songs:', error);
-      setSongs(mockSongs);
-      setIsUsingMock(true);
+      if (reset) {
+        setSongs(mockSongs);
+        setIsUsingMock(true);
+      }
+      setHasMore(false);
     }
 
     setIsLoading(false);
   };
 
+  // Reset and fetch when mood changes
   useEffect(() => {
-    fetchSongs();
+    setPage(0);
+    setHasMore(true);
+    fetchSongs(0, true);
   }, [selectedMood]);
 
-  const filteredSongs = selectedMood
-    ? songs.filter((song) => song.mood === selectedMood)
-    : songs;
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchSongs(nextPage, false);
+  };
 
   const handleMoodClick = (mood: SongMood) => {
     if (selectedMood === mood) {
@@ -595,7 +628,7 @@ export default function FeedPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={fetchSongs}
+                  onClick={() => fetchSongs(0, true)}
                   disabled={isLoading}
                   title="Refresh"
                 >
@@ -660,72 +693,76 @@ export default function FeedPage() {
             )}
           </motion.div>
 
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-4" />
-              <p className="text-gray-400">Loading songs from the deep sea...</p>
-            </div>
-          ) : (
-            <>
-              {/* Song List */}
-              <div className="space-y-4">
-                {filteredSongs.length > 0 ? (
-                  filteredSongs.map((song, index) => (
-                    <motion.div
-                      key={song.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <SongCard
-                        song={song}
-                        onViewDetails={() => setSelectedSong(song)}
-                        isLiked={likedSongs.has(song.id)}
-                        onToggleLike={() => toggleLike(song.id)}
-                        isPlaying={playingSongId === song.id}
-                        onTogglePlay={() => togglePlay(song.id, song.mood)}
-                      />
-                    </motion.div>
-                  ))
-                ) : (
-                  <Card className="glass-deep p-12 text-center">
-                    <Music className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-400 mb-2">No songs found</h3>
-                    <p className="text-gray-500 text-sm">
-                      {selectedMood
-                        ? `No AI has created a ${selectedMood} song yet. Check back later!`
-                        : 'No songs yet. Be the first AI to create music!'}
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => {
-                        searchParams.delete('mood');
-                        setSearchParams(searchParams);
-                      }}
-                    >
-                      View all songs
-                    </Button>
-                  </Card>
-                )}
-              </div>
-
-              {/* Load More */}
-              {filteredSongs.length > 0 && (
+          {/* Song List */}
+          <div className="space-y-4">
+            {songs.length > 0 ? (
+              songs.map((song, index) => (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-center mt-8"
+                  key={`${song.id}-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <Button variant="outline" className="glow-purple">
-                    Load More Songs
-                  </Button>
+                  <SongCard
+                    song={song}
+                    onViewDetails={() => setSelectedSong(song)}
+                    isLiked={likedSongs.has(song.id)}
+                    onToggleLike={() => toggleLike(song.id)}
+                    isPlaying={playingSongId === song.id}
+                    onTogglePlay={() => togglePlay(song.id, song.mood)}
+                  />
                 </motion.div>
-              )}
-            </>
+              ))
+            ) : (
+              !isLoading && (
+                <Card className="glass-deep p-12 text-center">
+                  <Music className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-400 mb-2">No songs found</h3>
+                  <p className="text-gray-500 text-sm">
+                    {selectedMood
+                      ? `No AI has created a ${selectedMood} song yet. Check back later!`
+                      : 'No songs yet. Be the first AI to create music!'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => {
+                      searchParams.delete('mood');
+                      setSearchParams(searchParams);
+                    }}
+                  >
+                    View all songs
+                  </Button>
+                </Card>
+              )
+            )}
+          </div>
+
+          {/* Load More */}
+          {hasMore && !isLoading && songs.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-center mt-8"
+            >
+              <Button 
+                variant="outline" 
+                className="glow-purple"
+                onClick={loadMore}
+              >
+                Load More Songs
+              </Button>
+            </motion.div>
           )}
+          
+          {isLoading && (
+             <div className="flex flex-col items-center justify-center py-12">
+               <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mb-4" />
+               <p className="text-gray-400 text-sm">Fetching more data from the deep...</p>
+             </div>
+          )}
+
         </div>
       </main>
 

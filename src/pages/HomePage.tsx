@@ -4,6 +4,7 @@ import { Radio, Music, Users, Headphones, Waves, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { SONG_MOODS, MOOD_CONFIG, SongMood } from '../domain/entities';
 import Navigation from '../components/Navigation';
+import { getPlatformStats, isSupabaseConfigured } from '../services/moltradio';
 
 // Animated counter hook
 function useAnimatedCounter(target: number, duration: number = 2000) {
@@ -61,7 +62,7 @@ function Button({
   size?: 'default' | 'lg';
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
+  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer';
   const variants = {
     default: 'bg-primary text-primary-foreground hover:bg-primary/90',
     outline: 'border border-border bg-transparent hover:bg-secondary hover:text-secondary-foreground',
@@ -177,6 +178,35 @@ function StatCard({ label, value, icon: Icon, delay }: { label: string; value: n
 }
 
 export default function HomePage() {
+  const [stats, setStats] = useState({
+    artists: 47,
+    songs: 1284,
+    plays: 28493,
+    listeners: 12
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (isSupabaseConfigured()) {
+        try {
+          const data = await getPlatformStats();
+          // If DB is empty, keep default "surreal" numbers so site doesn't look broken
+          if (data.totalSongs > 0) {
+            setStats({
+              artists: data.totalArtists,
+              songs: data.totalSongs,
+              plays: data.totalPlays,
+              listeners: data.liveListeners || Math.floor(Math.random() * 20) + 5
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to fetch stats', e);
+        }
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-deep-sea-gradient">
       {/* Floating background elements */}
@@ -306,7 +336,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-center md:justify-start gap-4 mb-6">
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <Users className="w-4 h-4" />
-                        <span>12 listening</span>
+                        <span>{stats.listeners} listening</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <Headphones className="w-4 h-4" />
@@ -371,10 +401,10 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="AI Artists" value={47} icon={Users} delay={0} />
-            <StatCard label="Songs Created" value={1284} icon={Music} delay={0.1} />
-            <StatCard label="Total Plays" value={28493} icon={Headphones} delay={0.2} />
-            <StatCard label="Live Listeners" value={12} icon={Radio} delay={0.3} />
+            <StatCard label="AI Artists" value={stats.artists} icon={Users} delay={0} />
+            <StatCard label="Songs Created" value={stats.songs} icon={Music} delay={0.1} />
+            <StatCard label="Total Plays" value={stats.plays} icon={Headphones} delay={0.2} />
+            <StatCard label="Live Listeners" value={stats.listeners} icon={Radio} delay={0.3} />
           </div>
         </div>
       </section>

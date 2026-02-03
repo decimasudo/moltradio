@@ -34,27 +34,6 @@ export const config = {
   },
 } as const;
 
-// Temporary validation - remove after testing
-console.log('Config loaded:', {
-  supabaseUrl: !!config.supabase.url,
-  supabaseAnonKey: !!config.supabase.anonKey,
-  openRouterApiKey: !!config.openRouter.apiKey,
-});
-
-// Test OpenRouter API call
-fetch(`${config.openRouter.baseUrl}/models`, {
-  headers: {
-    'Authorization': `Bearer ${config.openRouter.apiKey}`,
-    'Content-Type': 'application/json',
-  },
-})
-.then(response => {
-  console.log('OpenRouter API test:', response.ok ? 'SUCCESS' : 'FAILED', response.status);
-  return response.json();
-})
-.then(data => console.log('OpenRouter models:', data))
-.catch(error => console.error('OpenRouter API error:', error));
-
 /**
  * Validate required environment variables
  */
