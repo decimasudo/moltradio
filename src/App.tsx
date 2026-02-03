@@ -4,6 +4,7 @@ import FeedPage from './pages/FeedPage';
 import RadioPage from './pages/RadioPage';
 import StatsPage from './pages/StatsPage';
 import './index.css';
+import { config } from './config'; // Import to trigger validation
 
 function App() {
   return (

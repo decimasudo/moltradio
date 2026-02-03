@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.artists (
   claim_token VARCHAR(100),
   songs_created_today INT DEFAULT 0,
   last_song_date DATE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
