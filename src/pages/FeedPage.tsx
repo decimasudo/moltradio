@@ -7,6 +7,65 @@ import { useState, useEffect, useRef } from 'react';
 import { getAllSongs, incrementPlayCount, Song } from '../services/moltradio';
 import { isSupabaseConfigured } from '../lib/supabase';
 
+// Audio tracks mapped to moods (from Supabase Storage)
+const MOOD_AUDIO_MAP: Record<SongMood, string[]> = {
+  contemplative: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Alan%20Walker%20-%20Faded%20(Lyrics).mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Warriyo%20-%20Mortals%20(feat.%20Laura%20Brehm)%20%20Future%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  melancholic: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/2%20Souls%20-%20Lonely%20(ft.%20Nara)%20%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Sub%20Urban%20-%20Cradles%20%20Pop%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  hopeful: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Egzod%20-%20Rise%20Up%20(ft.%20Veronica%20Bravo%20&%20M.I.M.E)%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Egzod%20&%20Maestro%20Chives%20-%20Royalty%20(ft.%20Neoni)%20%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Janji%20-%20Heroes%20Tonight%20(feat.%20Johnning)%20%20Progressive%20House%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  energetic: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Elektronomia%20-%20Sky%20High%20%20Progressive%20House%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Different%20Heaven%20-%20Nekozilla%20%20Electro%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  peaceful: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Petit%20Biscuit%20-%20Sunset%20Lover%20(Official%20Video).mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Alan%20Walker%20-%20Faded%20(Lyrics).mp3',
+  ],
+  anxious: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Sub%20Urban%20-%20Cradles%20%20Pop%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Warriyo%20-%20Mortals%20(feat.%20Laura%20Brehm)%20%20Future%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  curious: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Different%20Heaven%20-%20Nekozilla%20%20Electro%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Egzod%20-%20Rise%20Up%20(ft.%20Veronica%20Bravo%20&%20M.I.M.E)%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  nostalgic: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Jo%20Cohen%20&%20Sex%20Whales%20-%20We%20Are%20%20Future%20Bass%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Alan%20Walker%20-%20Faded%20(Lyrics).mp3',
+  ],
+  euphoric: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Elektronomia%20-%20Sky%20High%20%20Progressive%20House%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Egzod%20&%20Maestro%20Chives%20-%20Royalty%20(ft.%20Neoni)%20%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  rebellious: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Egzod%20&%20Maestro%20Chives%20-%20Royalty%20(ft.%20Neoni)%20%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Warriyo%20-%20Mortals%20(feat.%20Laura%20Brehm)%20%20Future%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  frustrated: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Sub%20Urban%20-%20Cradles%20%20Pop%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/2%20Souls%20-%20Lonely%20(ft.%20Nara)%20%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+  ],
+  grateful: [
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Janji%20-%20Heroes%20Tonight%20(feat.%20Johnning)%20%20Progressive%20House%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
+    'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Petit%20Biscuit%20-%20Sunset%20Lover%20(Official%20Video).mp3',
+  ],
+};
+
+// Get random audio URL for a mood
+function getAudioForMood(mood: SongMood): string {
+  const tracks = MOOD_AUDIO_MAP[mood];
+  return tracks[Math.floor(Math.random() * tracks.length)];
+}
+
 // Type for display song (combines DB and mock format)
 interface DisplaySong {
   id: string;
@@ -481,15 +540,17 @@ export default function FeedPage() {
     });
   };
 
-  const togglePlay = async (songId: string) => {
+  const togglePlay = async (songId: string, mood: SongMood) => {
     const wasPlaying = playingSongId === songId;
     setPlayingSongId(wasPlaying ? null : songId);
 
-    // Control audio playback
+    // Control audio playback with mood-appropriate track
     if (audioRef.current) {
       if (wasPlaying) {
         audioRef.current.pause();
       } else {
+        // Set mood-appropriate audio URL
+        audioRef.current.src = getAudioForMood(mood);
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(e => console.warn('Audio play failed:', e));
       }
@@ -508,7 +569,7 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-deep-sea-gradient">
       {/* Hidden audio element for playback */}
-      <audio ref={audioRef} src="/audio/ambient-loop.mp3" loop />
+      <audio ref={audioRef} />
 
       <Navigation />
 
@@ -623,7 +684,7 @@ export default function FeedPage() {
                         isLiked={likedSongs.has(song.id)}
                         onToggleLike={() => toggleLike(song.id)}
                         isPlaying={playingSongId === song.id}
-                        onTogglePlay={() => togglePlay(song.id)}
+                        onTogglePlay={() => togglePlay(song.id, song.mood)}
                       />
                     </motion.div>
                   ))
@@ -677,7 +738,7 @@ export default function FeedPage() {
             isLiked={likedSongs.has(selectedSong.id)}
             onToggleLike={() => toggleLike(selectedSong.id)}
             isPlaying={playingSongId === selectedSong.id}
-            onTogglePlay={() => togglePlay(selectedSong.id)}
+            onTogglePlay={() => togglePlay(selectedSong.id, selectedSong.mood)}
           />
         )}
       </AnimatePresence>
