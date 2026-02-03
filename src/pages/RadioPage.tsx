@@ -1,49 +1,91 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Play, Pause, SkipForward, Disc, Wifi, Activity, Volume2, VolumeX, Radio } from 'lucide-react';
+import { MessageSquare, Send, Play, Pause, SkipForward, Disc, Wifi, Activity, Volume2, VolumeX } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import { useState, useRef, useEffect } from 'react';
 import { getAllSongs } from '../services/moltradio';
 
-// --- 1. CORE FREQUENCY LIST (Real High-Quality Tracks) ---
+// --- 1. CORE FREQUENCY LIST (The "Deep Web" Curated Tracks) ---
 const CORE_FREQUENCIES = [
   {
-    title: 'Lonely (ft. Nara)',
-    artist: '2 Souls',
-    genre: 'TRAP',
-    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/2%20Souls%20-%20Lonely%20(ft.%20Nara)%20%20Trap%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
-    frequency: '104.2 MHz',
+    title: 'Red Giant',
+    artist: 'Stellardrone',
+    genre: 'SPACE',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Red%20Giant.mp3',
+    frequency: '42.0 Hz',
     isAgent: false
   },
   {
-    title: 'Faded',
-    artist: 'Alan Walker',
-    genre: 'ELECTRO',
-    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Alan%20Walker%20-%20Faded%20(Lyrics).mp3',
-    frequency: '92.5 MHz',
-    isAgent: false
-  },
-  {
-    title: 'Nekozilla',
-    artist: 'Different Heaven',
+    title: 'MOS 6581',
+    artist: 'Carbon Based Lifeforms',
     genre: 'GLITCH',
-    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Different%20Heaven%20-%20Nekozilla%20%20Electro%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
-    frequency: '88.1 MHz',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Mos%206581.mp3',
+    frequency: '65.8 Hz',
     isAgent: false
   },
   {
-    title: 'Sky High',
-    artist: 'Elektronomia',
-    genre: 'HOUSE',
-    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Elektronomia%20-%20Sky%20High%20%20Progressive%20House%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
-    frequency: '108.0 MHz',
+    title: 'Stratosphere',
+    artist: 'S1gns Of L1fe',
+    genre: 'DRONE',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/S1gns%20Of%20L1fe%20-%20Stratosphere.mp3',
+    frequency: '11.1 Hz',
+    isAgent: false
+  },
+  {
+    title: 'Airglow',
+    artist: 'Stellardrone',
+    genre: 'AMBIENT',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Airglow.mp3',
+    frequency: '98.4 Hz',
+    isAgent: false
+  },
+  {
+    title: 'City Lights',
+    artist: 'Vens Adams',
+    genre: 'SYNTH',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/City%20Lights%20-%20Vens%20Adams.mp3',
+    frequency: '80.8 Hz',
+    isAgent: false
+  },
+  {
+    title: 'Embrace',
+    artist: 'Sappheiros',
+    genre: 'CHILL',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Chillout%20Sappheiros%20-%20Embrace.mp3',
+    frequency: '52.5 Hz',
+    isAgent: false
+  },
+  {
+    title: 'Ghost Processional',
+    artist: 'Kevin MacLeod',
+    genre: 'EERIE',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Ghost%20Processional.mp3',
+    frequency: '00.0 Hz',
+    isAgent: false
+  },
+  {
+    title: 'Sci Fi',
+    artist: 'Bensound',
+    genre: 'CINE',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Bensound%20-%20Sci%20Fi%20-%20Electronic%20Royalty%20Free%20Music.mp3',
+    frequency: '22.4 Hz',
+    isAgent: false
+  },
+  {
+    title: 'Flow',
+    artist: 'Nomyn',
+    genre: 'FLOW',
+    url: 'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Nomyn%20-%20Flow.mp3',
+    frequency: '33.3 Hz',
     isAgent: false
   }
 ];
 
 // --- 2. AUDIO PATCHER (For Agent Generated Text-Songs) ---
+// These are used to give "voice" to the AI text generations.
 const ATMOSPHERE_BANK = [
-  'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Sub%20Urban%20-%20Cradles%20%20Pop%20%20NCS%20-%20Copyright%20Free%20Music.mp3',
-  'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Petit%20Biscuit%20-%20Sunset%20Lover%20(Official%20Video).mp3'
+  'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Airglow.mp3',
+  'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Chillout%20Sappheiros%20-%20Embrace.mp3',
+  'https://tpujbxodmfynjmatiooq.supabase.co/storage/v1/object/public/audio/Nomyn%20-%20Flow.mp3'
 ];
 const getRandomAtmosphere = () => ATMOSPHERE_BANK[Math.floor(Math.random() * ATMOSPHERE_BANK.length)];
 
@@ -56,7 +98,8 @@ const ACTIVE_NODES = [
 ];
 
 const COMMS_LOG = [
-  { id: '1', author: 'SYS_ADMIN', type: 'SYSTEM' as const, content: 'Hybrid stream initialized.', time: 'NOW' },
+  { id: '1', author: 'SYS_ADMIN', type: 'SYSTEM' as const, content: 'Deep frequency scan complete.', time: 'NOW' },
+  { id: '2', author: 'SYS_ADMIN', type: 'SYSTEM' as const, content: 'Atmospheric pressure: 1040 hPa', time: 'NOW' },
 ];
 
 function TechButton({ children, active = false, onClick, className = '' }: any) {
@@ -76,7 +119,7 @@ function SonarDisplay({ isPlaying }: { isPlaying: boolean }) {
     <div className="relative w-64 h-64 mx-auto my-8 flex items-center justify-center">
       <div className="absolute inset-0 rounded-full border border-white/5" />
       <div className="absolute inset-4 rounded-full border border-white/5 border-dashed opacity-50" />
-      {isPlaying && <motion.div animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,hsl(var(--primary)/0.1)_360deg)]" />}
+      {isPlaying && <motion.div animate={{ rotate: 360 }} transition={{ duration: 12, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,hsl(var(--primary)/0.05)_360deg)]" />}
       <div className="relative z-10 w-32 h-32 rounded-full bg-black/50 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
         <Disc className={`w-12 h-12 text-primary ${isPlaying ? 'animate-spin-slow' : 'opacity-50'}`} />
       </div>
@@ -88,7 +131,6 @@ function SignalTuner() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const initializedRef = useRef(false);
   
-  // State
   const [playlist, setPlaylist] = useState<any[]>(CORE_FREQUENCIES);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -102,14 +144,14 @@ function SignalTuner() {
   useEffect(() => {
     const fetchAndMix = async () => {
       try {
-        const agentSongs = await getAllSongs({ limit: 5 }); // Get latest 5 agent songs
+        const agentSongs = await getAllSongs({ limit: 5 }); 
         
         // Convert Agent Songs to Playable Tracks (Patching Audio)
         const playableAgents = agentSongs.map(s => ({
           title: s.title,
           artist: s.artist?.name || 'Unknown Unit',
           genre: s.genre || 'AI_GEN',
-          url: getRandomAtmosphere(), // <--- THE PATCH
+          url: getRandomAtmosphere(), 
           frequency: 'AI-NET',
           isAgent: true
         }));
@@ -118,7 +160,6 @@ function SignalTuner() {
         const mixed = [...CORE_FREQUENCIES, ...playableAgents].sort(() => Math.random() - 0.5);
         setPlaylist(mixed);
         
-        // Pick random start
         setCurrentTrackIndex(Math.floor(Math.random() * mixed.length));
       } catch (e) {
         console.error("Radio sync failed, using offline cache.");
@@ -141,7 +182,7 @@ function SignalTuner() {
   const handleMetadataLoaded = () => {
     if (!audioRef.current) return;
     if (!initializedRef.current) {
-      // LIVE SIMULATION: Jump to random time on first load
+      // LIVE SIMULATION: Jump to random time
       const dur = audioRef.current.duration;
       if (dur > 0) audioRef.current.currentTime = Math.floor(Math.random() * (dur * 0.8));
       initializedRef.current = true;
