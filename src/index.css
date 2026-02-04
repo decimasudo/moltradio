@@ -4,31 +4,32 @@
 
 @layer base {
   :root {
-    --radius: 0.5rem; /* Slightly sharper corners for a tech/equipment feel */
+    --radius: 0.5rem; 
 
-    /* Theme: Benthic Analog
-      Concept: Dark matte metal, phosphor displays, deep ocean pressure.
-      Avoids: Neon cyberpunk defaults.
+    /* Theme: Moltbot Neon
+      Concept: High-contrast Cyberpunk, Obsidian Black, Neon Orange glow.
+      Refactored from Benthic Analog.
     */
 
-    /* Background: Very dark slate blue, almost black */
-    --background: 224 25% 6%;
-    /* Foreground: Off-white, not pure white, for easier reading */
+    /* Background: Deep Obsidian/Black (Darkened slightly to make orange pop) */
+    --background: 224 25% 4%;
+    /* Foreground: Off-white */
     --foreground: 210 20% 98%;
 
-    /* Card: Slightly lighter than background, "matte" finish */
-    --card: 224 20% 8%;
+    /* Card: Dark Matte surface */
+    --card: 224 20% 6%;
     --card-foreground: 210 20% 98%;
 
-    /* Popover: Distinct from card, slightly raised */
-    --popover: 224 20% 8%;
+    /* Popover: Distinct from card */
+    --popover: 224 20% 6%;
     --popover-foreground: 210 20% 98%;
 
-    /* Primary: Phosphor/Sonar Green - High contrast, readable, electric */
-    --primary: 150 60% 55%; 
-    --primary-foreground: 150 90% 5%;
+    /* Primary: Neon Orange - The main "Molty" glow */
+    /* High saturation, bright enough to glow against black */
+    --primary: 24 98% 55%; 
+    --primary-foreground: 24 100% 10%;
 
-    /* Secondary: Muted Steel Blue - Used for secondary actions/info */
+    /* Secondary: Muted Steel Blue - Kept for balance */
     --secondary: 215 15% 20%;
     --secondary-foreground: 210 20% 90%;
 
@@ -36,27 +37,30 @@
     --muted: 215 15% 15%;
     --muted-foreground: 215 15% 50%;
 
-    /* Accent: Bioluminescent Amber/Orange - For "Live" or specific highlights */
-    --accent: 32 80% 60%;
-    --accent-foreground: 32 90% 10%;
+    /* Accent: Electric Amber - For "Live" states or secondary highlights */
+    /* Shifted towards yellow/gold to match the antennae tips/eyes */
+    --accent: 42 100% 60%;
+    --accent-foreground: 42 100% 10%;
 
     /* Destructive: Signal Red */
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Border: Low contrast, subtle separation */
+    /* Border: Low contrast */
     --border: 215 15% 15%;
     --input: 215 15% 15%;
-    --ring: 150 60% 55%;
+    
+    /* Ring: Matches Primary Neon Orange */
+    --ring: 24 98% 55%;
 
     /* Brand Specifics */
-    --brand-deep: 224 30% 4%;
-    --brand-surface: 224 20% 10%;
+    --brand-deep: 224 30% 3%;
+    --brand-surface: 224 20% 8%;
   }
 
   .dark {
     /* Theme is natively dark, but we keep this block for robustness */
-    --background: 224 25% 6%;
+    --background: 224 25% 4%;
     --foreground: 210 20% 98%;
   }
 
@@ -71,7 +75,7 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
-  /* The "Anti-AI" Texture Layer */
+  /* The "Anti-AI" Texture Layer - Kept as is */
   body::before {
     content: "";
     position: fixed;
@@ -88,9 +92,7 @@
 }
 
 @layer utilities {
-  /* Glass Effects - Refined
-    Less "blurry plastic", more "tinted glass" 
-  */
+  /* Glass Effects - Refined */
   .glass-panel {
     @apply bg-background/80 backdrop-blur-md border border-white/5 shadow-2xl;
   }

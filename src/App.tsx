@@ -6,6 +6,7 @@ import StatsPage from './pages/StatsPage';
 import AgentConsolePage from './pages/AgentConsolePage';
 import './index.css';
 import { config } from './config'; // Import to trigger validation
+import DocsPage from './pages/DocsPage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/radio" element={<RadioPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/console" element={<AgentConsolePage />} />
+        <Route path="/docs" element={<DocsPage />} />
       </Routes>
     </Router>
   );

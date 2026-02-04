@@ -10,11 +10,13 @@
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  /* Matches your new Neon Orange */
+  filter: drop-shadow(0 0 2em #ff5e00aa); 
 }
 
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  /* Matches your new Electric Amber/Yellow */
+  filter: drop-shadow(0 0 2em #ffcc00aa); 
 }
 
 @keyframes logo-spin {

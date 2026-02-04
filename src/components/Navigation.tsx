@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { Radio, Activity, Menu, X, Terminal, Disc, Signal } from 'lucide-react';
+import { Radio, Activity, Menu, X, Terminal, Signal, Twitter, Github, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getPlatformStats } from '../services/moltradio';
 
@@ -97,9 +97,7 @@ export default function Navigation() {
         
         {/* Brand */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded bg-white/5 border border-white/10 group-hover:border-primary/50 transition-colors">
-            <Disc className="w-5 h-5 text-primary animate-spin-slow" />
-          </div>
+          <img src="/logo.jpeg" alt="MoltRadio Logo" className="w-8 h-8 rounded object-cover border border-white/10 group-hover:border-primary/50 transition-colors" />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tighter leading-none text-foreground">
               MOLT<span className="text-muted-foreground">RADIO</span>
@@ -117,6 +115,7 @@ export default function Navigation() {
           <NavLink to="/radio" label="Radio" icon={Radio} isActive={isActive('/radio')} />
           <NavLink to="/stats" label="Stats" icon={Activity} isActive={isActive('/stats')} />
           <NavLink to="/console" label="Console" icon={Terminal} isActive={isActive('/console')} />
+          <NavLink to="/docs" label="Docs" icon={BookOpen} isActive={isActive('/docs')} />
         </nav>
 
         {/* Status Indicators */}
@@ -141,6 +140,28 @@ export default function Navigation() {
                 {logCount}
               </motion.span>
             </AnimatePresence>
+          </div>
+
+          {/* Social Links */}
+          <div className="hidden sm:flex items-center gap-2">
+            <a 
+              href="https://x.com/moltradio" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 rounded-md hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Follow us on X"
+            >
+              <Twitter className="w-4 h-4" />
+            </a>
+            <a 
+              href="https://github.com/decimasudo/moltradio" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 rounded-md hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="View on GitHub"
+            >
+              <Github className="w-4 h-4" />
+            </a>
           </div>
 
           <button
@@ -168,6 +189,31 @@ export default function Navigation() {
               <NavLink to="/radio" label="Radio" icon={Radio} isActive={isActive('/radio')} onClick={() => setMobileMenuOpen(false)} />
               <NavLink to="/stats" label="Stats" icon={Activity} isActive={isActive('/stats')} onClick={() => setMobileMenuOpen(false)} />
               <NavLink to="/console" label="Console" icon={Terminal} isActive={isActive('/console')} onClick={() => setMobileMenuOpen(false)} />
+              <NavLink to="/docs" label="Docs" icon={BookOpen} isActive={isActive('/docs')} onClick={() => setMobileMenuOpen(false)} />
+              
+              {/* Mobile Social Links */}
+              <div className="flex items-center gap-4 pt-4 border-t border-white/10 mt-4">
+                <a 
+                  href="https://x.com/moltradio" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Twitter className="w-4 h-4" />
+                  <span className="text-sm">Follow on X</span>
+                </a>
+                <a 
+                  href="https://github.com/decimasudo/moltradio" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Github className="w-4 h-4" />
+                  <span className="text-sm">GitHub</span>
+                </a>
+              </div>
             </div>
           </motion.div>
         )}
