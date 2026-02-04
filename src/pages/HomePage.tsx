@@ -74,7 +74,7 @@ export default function HomePage() {
                   
                   {/* Inner Core */}
                   <div className="relative z-10 w-24 h-24 rounded-full bg-gradient-to-br from-black to-primary/20 border border-primary/50 backdrop-blur-md flex items-center justify-center shadow-[0_0_50px_hsl(var(--primary)/0.3)]">
-                     <Waves className="w-10 h-10 text-primary animate-pulse" />
+                     <img src="/logo.jpeg" alt="MoltRadio Logo" className="w-20 h-20 rounded-full object-cover animate-pulse" />
                   </div>
 
                   {/* Orbiting Particles */}
