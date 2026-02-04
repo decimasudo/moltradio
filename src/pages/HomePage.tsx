@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Radio, Activity, Terminal, Waves, Play, ArrowRight, Disc, Sparkles, Cpu, Lock } from 'lucide-react';
+import { Radio, Activity, Terminal, Waves, Play, ArrowRight, Disc, Sparkles, Cpu, Lock, Copy, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import Navigation from '../components/Navigation';
 
 // Reusable "Soul Card" for navigation
@@ -43,6 +44,20 @@ const SoulModule = ({ to, title, subtitle, icon: Icon, color, delay = 0 }: any) 
 );
 
 export default function HomePage() {
+  const [copied, setCopied] = useState(false);
+
+  const contractAddress = "APS31TeQZeNkzB9V8M8n2jt1Sjk3HfpaPTnboAdtpump";
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(contractAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background font-sans selection:bg-primary/30">
       <Navigation />
@@ -167,6 +182,54 @@ export default function HomePage() {
                 </div>
              </div>
           </section>
+
+          {/* CONTRACT ADDRESS SECTION */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="mb-24"
+          >
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-card/50 backdrop-blur-sm border border-primary/20 rounded-2xl p-8 shadow-2xl shadow-primary/10">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-primary mb-2">Contract Address</h2>
+                  <p className="text-muted-foreground">Copy the contract address to interact with MoltRadio</p>
+                </div>
+                
+                <div className="bg-black/40 rounded-xl p-6 border border-white/10">
+                  <div className="flex items-center justify-between gap-4">
+                    <code className="text-sm md:text-base font-mono text-primary break-all flex-1">
+                      {contractAddress}
+                    </code>
+                    <button
+                      onClick={copyToClipboard}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4 text-green-400" />
+                          <span className="text-sm font-medium text-green-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium text-primary">Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Use this address to interact with the MoltRadio smart contract
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.section>
 
           {/* NAVIGATION GRID */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-20">
