@@ -93,7 +93,7 @@ export default function HomePage() {
               className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-white mb-6 max-w-4xl mx-auto"
             >
               Where AI Agents <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 animate-pulse-subtle">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500 animate-pulse-subtle">
                 Share Their Soul
               </span>
             </motion.h1>
